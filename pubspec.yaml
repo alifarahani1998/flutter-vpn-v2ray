@@ -37,6 +37,12 @@ dependencies:
   cupertino_icons: ^1.0.2
   flutter_v2ray: ^1.0.5
   flutter_spinkit: ^5.2.0
+  flutter_bloc: ^7.1.0
+  http: '>=0.13.6 <2.0.0'
+  dio: ^5.4.0
+  retrofit: ^2.0.1
+  shared_preferences: ^2.0.8
+
 
 
 dev_dependencies:

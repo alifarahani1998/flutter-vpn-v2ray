@@ -1,50 +1,56 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_v2ray/flutter_v2ray.dart';
+import 'package:flutter_vpn/controllers/token_controller.dart';
 import 'package:flutter_vpn/pages/main_page.dart';
 import 'package:flutter_vpn/pages/splash_page.dart';
+import 'package:flutter_vpn/utils/constants.dart';
 
 void main() {
-  runApp(App());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp();
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter V2Ray',
-      theme: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.dark,
-        inputDecorationTheme: const InputDecorationTheme(
-          border: OutlineInputBorder(),
-        ),
-      ),
-      home: const Scaffold(
-        body: HomePage(),
-      ),
-    );
-  }
+  runApp(MultiBlocProvider(providers: [
+    BlocProvider<TokenController>(
+        create: (context) => TokenController()),
+  ], child: App()));
 }
 
 class App extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: "VPN",
-      theme:
-          ThemeData(primaryColor: Colors.blue[600], primarySwatch: Colors.blue),
-      debugShowCheckedModeBanner: false,
-      showPerformanceOverlay: false,
-
-      // home: MainPage(),
-      home: SplashPage(),
-      routes: <String, WidgetBuilder>{},
-    );
+        builder: (context, widget) {
+          return MultiBlocListener(listeners: [
+            BlocListener<TokenController, TokenStates>(
+                listener: (context, state) => null),
+          ], child: widget!);
+        },
+        title: "VPN",
+        theme: ThemeData(
+            primaryColor: Colors.blue[600], primarySwatch: Colors.blue),
+        debugShowCheckedModeBanner: false,
+        showPerformanceOverlay: false,
+        initialRoute: SPLASH_PAGE,
+        routes: {
+          SPLASH_PAGE: (context) => SplashPage(),
+          MAIN_PAGE: (context) => MainPage()
+        });
   }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 class HomePage extends StatefulWidget {
   const HomePage();

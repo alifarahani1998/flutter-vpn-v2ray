@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
-import 'package:flutter_vpn/utils/utils.dart';
+import 'package:flutter_v2ray/flutter_v2ray.dart';
+import 'package:flutter_vpn/controllers/connection_controller.dart';
+import 'package:flutter_vpn/utils/constants.dart';
 // import 'package:flutter_vpn/widgets/main_drawer.dart';
 
 class MainPage extends StatefulWidget {
@@ -14,17 +17,51 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
   final bgColorConnected = [Color(0xFF000000), Color(0xFF37AC53)];
   final bgColorConnecting = [Color(0xFF000000), Color(0xFFCCAD00)];
 
-  late bool connectionState;
+  var v2rayStatus = ValueNotifier<V2RayStatus>(V2RayStatus());
+  late final FlutterV2ray flutterV2ray = FlutterV2ray(
+    onStatusChanged: (status) {
+      v2rayStatus.value = status;
+    },
+  );
 
   @override
   void initState() {
     super.initState();
-    connectionState = true;
   }
 
   @override
   void dispose() {
     super.dispose();
+  }
+
+  void connect(String connectionJson) async {
+    context.read<ConnectionController>().emit(ConnectionStateConnected());
+    if (await flutterV2ray.requestPermission()) {
+      await flutterV2ray.startV2Ray(
+        remark: "Default Remark",
+        config: connectionJson,
+        proxyOnly: false,
+      );
+      context.read<ConnectionController>().emit(ConnectionStateConnected());
+    } else {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Permission Denied'),
+          ),
+        );
+      }
+    }
+  }
+
+  void delay(String connectionJson) async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          '${(await flutterV2ray.getServerDelay(config: connectionJson))}ms',
+        ),
+      ),
+    );
   }
 
   Widget serverConnection(context) {
@@ -66,8 +103,9 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
     );
   }
 
-  Widget buildUi(BuildContext context) {
-    if (connectionState) {
+  Widget buildUi(
+      BuildContext context, ConnectingStates state, String connectionJson) {
+    if (state is ConnectionStateConnected) {
       return Row(
         mainAxisSize: MainAxisSize.max,
         mainAxisAlignment: MainAxisAlignment.center,
@@ -89,7 +127,7 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
               ),
               SizedBox(height: screenAwareSize(35.0, context)),
               InkWell(
-                onTap: null,
+                onTap: () => connect(connectionJson),
                 child: Container(
                   width: screenAwareSize(190.0, context),
                   height: screenAwareSize(190.0, context),
@@ -110,7 +148,7 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
           ))
         ],
       );
-    } else if (!connectionState) {
+    } else if (state is ConnectionStateLoading) {
       return Row(
         mainAxisSize: MainAxisSize.max,
         mainAxisAlignment: MainAxisAlignment.center,
@@ -141,7 +179,7 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
           ))
         ],
       );
-    } else {
+    } else if (state is ConnectionStateInitial) {
       return Row(
         mainAxisSize: MainAxisSize.max,
         mainAxisAlignment: MainAxisAlignment.center,
@@ -163,7 +201,12 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
               ),
               SizedBox(height: screenAwareSize(35.0, context)),
               InkWell(
-                onTap: null,
+                onTap: () async {
+                  await flutterV2ray.stopV2Ray();
+                  context
+                      .read<ConnectionController>()
+                      .emit(ConnectionStateInitial());
+                },
                 child: Container(
                   width: screenAwareSize(190.0, context),
                   height: screenAwareSize(190.0, context),
@@ -185,41 +228,51 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
         ],
       );
     }
+    return Container();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-          image: new DecorationImage(
-            image: new AssetImage("assets/map-pattern.png"),
-            fit: BoxFit.contain,
-          ),
-          gradient: LinearGradient(
-              colors: connectionState
-                  ? bgColorConnected
-                  : (!connectionState
-                      ? bgColorConnecting
-                      : bgColorDisconnected),
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              tileMode: TileMode.clamp)),
-      child: Scaffold(
-          backgroundColor: Colors.transparent,
-          // drawer: MainDrawer(),
-          appBar: AppBar(
-            iconTheme: new IconThemeData(color: Colors.white),
-            backgroundColor: Colors.transparent,
-            elevation: 0.0,
-            title: Text("VPN",
-                style: TextStyle(
-                    color: Colors.white,
-                    fontSize: screenAwareSize(18.0, context),
-                    fontFamily: "Montserrat-Bold")),
-            centerTitle: true,
-          ),
-          body: buildUi(context)),
+    final argument = ModalRoute.of(context)!.settings.arguments as String;
+    return BlocProvider<ConnectionController>(
+      create: (context) => ConnectionController(),
+      child: BlocConsumer<ConnectionController, ConnectingStates>(
+        listener: (context, state) {},
+        builder: (context, state) {
+          return Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+                image: new DecorationImage(
+                  image: new AssetImage("assets/map-pattern.png"),
+                  fit: BoxFit.contain,
+                ),
+                gradient: LinearGradient(
+                    colors: state is ConnectionStateConnected
+                        ? bgColorConnected
+                        : state is ConnectionStateLoading
+                            ? bgColorConnecting
+                            : bgColorDisconnected,
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    tileMode: TileMode.clamp)),
+            child: Scaffold(
+                backgroundColor: Colors.transparent,
+                // drawer: MainDrawer(),
+                appBar: AppBar(
+                  iconTheme: new IconThemeData(color: Colors.white),
+                  backgroundColor: Colors.transparent,
+                  elevation: 0.0,
+                  title: Text("VPN",
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: screenAwareSize(18.0, context),
+                          fontFamily: "Montserrat-Bold")),
+                  centerTitle: true,
+                ),
+                body: buildUi(context, state, argument)),
+          );
+        },
+      ),
     );
   }
 }
