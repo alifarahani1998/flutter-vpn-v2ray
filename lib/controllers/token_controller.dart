@@ -16,13 +16,12 @@ class TokenStateError extends TokenStates {}
 class TokenController extends Cubit<TokenStates> {
   TokenController() : super(TokenStateInitial());
 
-  late String connectionJson;
-
-  void getConnectionJson(TokenModel tokenModel) async {
+  void getConnectionJson(String token) async {
     emit(TokenStateLoading());
-    await Global.apiClient.getConnectionJson(tokenModel).then((value) async {
-      print('this is connectionJson: $value');
-      connectionJson = value;
+    await Global.apiClient
+        .getConnectionJson(TokenModel(token: token))
+        .then((value) async {
+      Global.connectionJsonModel = value;
       emit(TokenStateConnected());
     }).catchError((Object obj) {
       final res = (obj as DioError).response;
@@ -31,9 +30,6 @@ class TokenController extends Cubit<TokenStates> {
         case DioError:
           final res = (obj as DioError).response;
           switch (res?.statusCode) {
-            case 401:
-              Global.isTokenValid = false;
-              break;
             default:
               emit(TokenStateError());
               break;

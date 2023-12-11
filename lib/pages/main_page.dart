@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:flutter_v2ray/flutter_v2ray.dart';
 import 'package:flutter_vpn/controllers/connection_controller.dart';
+import 'package:flutter_vpn/helpers/global.dart';
 import 'package:flutter_vpn/utils/constants.dart';
 // import 'package:flutter_vpn/widgets/main_drawer.dart';
 
@@ -32,36 +33,6 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
   @override
   void dispose() {
     super.dispose();
-  }
-
-  void connect(String connectionJson) async {
-    context.read<ConnectionController>().emit(ConnectionStateConnected());
-    if (await flutterV2ray.requestPermission()) {
-      await flutterV2ray.startV2Ray(
-        remark: "Default Remark",
-        config: connectionJson,
-        proxyOnly: false,
-      );
-      context.read<ConnectionController>().emit(ConnectionStateConnected());
-    } else {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Permission Denied'),
-          ),
-        );
-      }
-    }
-  }
-
-  void delay(String connectionJson) async {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          '${(await flutterV2ray.getServerDelay(config: connectionJson))}ms',
-        ),
-      ),
-    );
   }
 
   Widget serverConnection(context) {
@@ -103,8 +74,7 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
     );
   }
 
-  Widget buildUi(
-      BuildContext context, ConnectingStates state, String connectionJson) {
+  Widget buildUi(BuildContext context, ConnectingStates state) {
     if (state is ConnectionStateConnected) {
       return Row(
         mainAxisSize: MainAxisSize.max,
@@ -127,7 +97,9 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
               ),
               SizedBox(height: screenAwareSize(35.0, context)),
               InkWell(
-                onTap: () => connect(connectionJson),
+                onTap: () => context
+                    .read<ConnectionController>()
+                    .disconnect(flutterV2ray),
                 child: Container(
                   width: screenAwareSize(190.0, context),
                   height: screenAwareSize(190.0, context),
@@ -201,12 +173,9 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
               ),
               SizedBox(height: screenAwareSize(35.0, context)),
               InkWell(
-                onTap: () async {
-                  await flutterV2ray.stopV2Ray();
-                  context
-                      .read<ConnectionController>()
-                      .emit(ConnectionStateInitial());
-                },
+                onTap: () => context
+                    .read<ConnectionController>()
+                    .connect(Global.connectionJsonModel, flutterV2ray),
                 child: Container(
                   width: screenAwareSize(190.0, context),
                   height: screenAwareSize(190.0, context),
@@ -233,7 +202,6 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final argument = ModalRoute.of(context)!.settings.arguments as String;
     return BlocProvider<ConnectionController>(
       create: (context) => ConnectionController(),
       child: BlocConsumer<ConnectionController, ConnectingStates>(
@@ -269,7 +237,7 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
                           fontFamily: "Montserrat-Bold")),
                   centerTitle: true,
                 ),
-                body: buildUi(context, state, argument)),
+                body: buildUi(context, state)),
           );
         },
       ),

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_vpn/controllers/token_controller.dart';
-import 'package:flutter_vpn/models/token_model.dart';
 import 'package:flutter_vpn/utils/constants.dart';
 
 class SplashPage extends StatelessWidget {
@@ -18,7 +17,7 @@ class SplashPage extends StatelessWidget {
       child: BlocConsumer<TokenController, TokenStates>(
         listener: (context, state) {
           if (state is TokenStateConnected)
-            Navigator.pushReplacementNamed(context, MAIN_PAGE, arguments: {'json': context.read<TokenController>().connectionJson});
+            Navigator.pushReplacementNamed(context, MAIN_PAGE);
         },
         builder: (context, state) {
           return Container(
@@ -84,7 +83,7 @@ class SplashPage extends StatelessWidget {
                         ElevatedButton(
                           onPressed: () => context
                               .read<TokenController>()
-                              .getConnectionJson(TokenModel(token: tokenController.text)),
+                              .getConnectionJson(tokenController.text),
                           style: ButtonStyle(
                             shape: MaterialStateProperty.all<
                                     RoundedRectangleBorder>(
