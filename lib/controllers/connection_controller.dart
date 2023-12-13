@@ -16,7 +16,7 @@ class ConnectionStateError extends ConnectingStates {}
 class ConnectionController extends Cubit<ConnectingStates> {
   ConnectionController() : super(ConnectionStateInitial());
 
-  void connect(
+  Future<void> connect(
       ConnectionJsonModel connectionJson, FlutterV2ray flutterV2ray) async {
     emit(ConnectionStateLoading());
     if (await flutterV2ray.requestPermission()) {
@@ -38,9 +38,9 @@ class ConnectionController extends Cubit<ConnectingStates> {
     // }
   }
 
-  void disconnect(FlutterV2ray flutterV2ray) {
+  Future<void> disconnect(FlutterV2ray flutterV2ray) async {
     emit(ConnectionStateLoading());
-    flutterV2ray.stopV2Ray();
+    await flutterV2ray.stopV2Ray();
     emit(ConnectionStateInitial());
   }
 

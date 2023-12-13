@@ -5,7 +5,8 @@ import 'package:flutter_v2ray/flutter_v2ray.dart';
 import 'package:flutter_vpn/controllers/connection_controller.dart';
 import 'package:flutter_vpn/helpers/global.dart';
 import 'package:flutter_vpn/utils/constants.dart';
-// import 'package:flutter_vpn/widgets/main_drawer.dart';
+import 'package:flutter_vpn/widgets/loading_button.dart';
+import 'package:flutter_vpn/widgets/main_drawer.dart';
 
 class MainPage extends StatefulWidget {
   MainPage();
@@ -19,15 +20,16 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
   final bgColorConnecting = [Color(0xFF000000), Color(0xFFCCAD00)];
 
   var v2rayStatus = ValueNotifier<V2RayStatus>(V2RayStatus());
-  late final FlutterV2ray flutterV2ray = FlutterV2ray(
-    onStatusChanged: (status) {
-      v2rayStatus.value = status;
-    },
-  );
+  late final FlutterV2ray flutterV2ray;
 
   @override
   void initState() {
     super.initState();
+    flutterV2ray = FlutterV2ray(
+      onStatusChanged: (status) {
+        v2rayStatus.value = status;
+      },
+    );
   }
 
   @override
@@ -225,7 +227,9 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
                     tileMode: TileMode.clamp)),
             child: Scaffold(
                 backgroundColor: Colors.transparent,
-                // drawer: MainDrawer(),
+                drawer: MainDrawer(
+                  flutterV2ray: flutterV2ray,
+                ),
                 appBar: AppBar(
                   iconTheme: new IconThemeData(color: Colors.white),
                   backgroundColor: Colors.transparent,
@@ -237,7 +241,71 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
                           fontFamily: "Montserrat-Bold")),
                   centerTitle: true,
                 ),
-                body: buildUi(context, state)),
+                body: Stack(
+                  children: [
+                    buildUi(context, state),
+                    Align(
+                      alignment: Alignment.bottomCenter,
+                      child: Padding(
+                        padding: EdgeInsets.only(bottom: 50),
+                        child: LoadingButton(
+                            text: 'Account Info',
+                            enable: true,
+                            // isWaiting: state is TokenStateLoading,
+                            callBack: () => showDialog(
+                                  context: context,
+                                  builder: (context) => Dialog(
+                                    backgroundColor: Colors.white,
+                                    child: Container(
+                                      padding: EdgeInsets.symmetric(
+                                          vertical: 40, horizontal: 30),
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Text(
+                                                'Days left: ',
+                                                style: TextStyle(
+                                                    fontSize: 20,
+                                                    fontWeight:
+                                                        FontWeight.bold),
+                                              ),
+                                              Text(
+                                                '29',
+                                                style: TextStyle(fontSize: 20),
+                                              )
+                                            ],
+                                          ),
+                                          SizedBox(
+                                            height: 10,
+                                          ),
+                                          Row(
+                                            children: [
+                                              Text(
+                                                'Traffic left: ',
+                                                style: TextStyle(
+                                                    fontSize: 20,
+                                                    fontWeight:
+                                                        FontWeight.bold),
+                                              ),
+                                              Text(
+                                                '1302 MB',
+                                                style: TextStyle(fontSize: 20),
+                                              )
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                )),
+                      ),
+                    )
+                  ],
+                )),
           );
         },
       ),

@@ -118,6 +118,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.3"
+  flutter_phoenix:
+    dependency: "direct main"
+    description:
+      name: flutter_phoenix
+      sha256: "39589dac934ea476d0e43fb60c1ddfba58f14960743640c8250dea11c4333378"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.1"
   flutter_spinkit:
     dependency: "direct main"
     description:
@@ -134,11 +142,10 @@ packages:
   flutter_v2ray:
     dependency: "direct main"
     description:
-      name: flutter_v2ray
-      sha256: "71569b928b00237fe921f3943cdb8fe181bca0c8be4af86b197f16de8d5760ec"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.5"
+      path: "/Users/ali/.pub-cache/hosted/pub.dev/flutter_v2ray-1.0.4"
+      relative: false
+    source: path
+    version: "1.0.4"
   flutter_web_plugins:
     dependency: transitive
     description: flutter
@@ -168,6 +175,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.1"
+  logger:
+    dependency: "direct main"
+    description:
+      name: logger
+      sha256: "7ad7215c15420a102ec687bb320a7312afd449bac63bfb1c60d9787c27b9767f"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.4.0"
   matcher:
     dependency: transitive
     description:

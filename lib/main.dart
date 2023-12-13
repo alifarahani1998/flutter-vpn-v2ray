@@ -1,25 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_vpn/controllers/token_controller.dart';
+import 'package:flutter_phoenix/flutter_phoenix.dart';
+import 'package:flutter_vpn/controllers/authorization_controller.dart';
+import 'package:flutter_vpn/helpers/global.dart';
 import 'package:flutter_vpn/pages/main_page.dart';
+import 'package:flutter_vpn/pages/login_page.dart';
 import 'package:flutter_vpn/pages/splash_page.dart';
 import 'package:flutter_vpn/utils/constants.dart';
 
 void main() {
-  runApp(MultiBlocProvider(providers: [
-    BlocProvider<TokenController>(
-        create: (context) => TokenController()),
-  ], child: App()));
+  runApp(Phoenix(
+    child: MultiBlocProvider(providers: [
+      BlocProvider<AuthorizationController>(
+          create: (context) => AuthorizationController()),
+    ], child: App()),
+  ));
 }
 
 class App extends StatelessWidget {
+  Future<void> logout() async {
+    await Global.shPreferences.clear();
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
         builder: (context, widget) {
           return MultiBlocListener(listeners: [
-            BlocListener<TokenController, TokenStates>(
-                listener: (context, state) => null),
+            BlocListener<AuthorizationController, AuthorizationStates>(
+                listener: (context, state) {
+              if (state is AuthorizationStatesUnauthorizedAndSignedOut)
+                {logout();
+                Phoenix.rebirth(context);
+                }
+            }),
           ], child: widget!);
         },
         title: "VPN",
@@ -30,6 +44,7 @@ class App extends StatelessWidget {
         initialRoute: SPLASH_PAGE,
         routes: {
           SPLASH_PAGE: (context) => SplashPage(),
+          LOGIN_PAGE: (context) => LoginPage(),
           MAIN_PAGE: (context) => MainPage()
         });
   }

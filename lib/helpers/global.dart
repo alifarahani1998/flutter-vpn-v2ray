@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_vpn/helpers/ApiClient.dart';
 import 'package:flutter_vpn/helpers/ApiEndpoints.dart';
 import 'package:flutter_vpn/models/connection_model.dart';
+import 'package:logger/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 //a typedef to use in class for callback functions
@@ -18,4 +19,5 @@ abstract class Global {
   )));
 
   static late SharedPreferences shPreferences;
+  static final Logger logger = new Logger();
 }
