@@ -1,4 +1,4 @@
-package com.example.flutter_vpn
+package com.example.moodiboom
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -1,12 +1,22 @@
+import 'dart:ui';
+
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_spinkit/flutter_spinkit.dart';
+// import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:flutter_v2ray/flutter_v2ray.dart';
-import 'package:flutter_vpn/controllers/connection_controller.dart';
-import 'package:flutter_vpn/helpers/global.dart';
-import 'package:flutter_vpn/utils/constants.dart';
-import 'package:flutter_vpn/widgets/loading_button.dart';
-import 'package:flutter_vpn/widgets/main_drawer.dart';
+import 'package:moodiboom/controllers/authorization_controller.dart';
+import 'package:moodiboom/controllers/connection_controller.dart';
+import 'package:moodiboom/helpers/global.dart';
+// import 'package:moodiboom/helpers/global.dart';
+import 'package:moodiboom/utils/constants.dart';
+import 'package:moodiboom/widgets/bottom_up_snapping_sheet.dart';
+import 'package:moodiboom/widgets/default_grabbing.dart';
+import 'package:moodiboom/widgets/dialogs.dart';
+import 'package:moodiboom/widgets/top_down_snapping_sheet.dart';
+import 'package:snapping_sheet/snapping_sheet.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class MainPage extends StatefulWidget {
   MainPage();
@@ -15,15 +25,22 @@ class MainPage extends StatefulWidget {
 }
 
 class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
-  final bgColorDisconnected = [Color(0xFF000000), Color(0xFFDD473D)];
-  final bgColorConnected = [Color(0xFF000000), Color(0xFF37AC53)];
-  final bgColorConnecting = [Color(0xFF000000), Color(0xFFCCAD00)];
-
   var v2rayStatus = ValueNotifier<V2RayStatus>(V2RayStatus());
   late final FlutterV2ray flutterV2ray;
+  TextEditingController _tokenController = new TextEditingController();
+  final SnappingSheetController _snappingSheetControllerAbove =
+      SnappingSheetController();
+  late bool isAboveSheetOpen;
+  late bool isBelowSheetOpen;
 
   @override
   void initState() {
+    isAboveSheetOpen = false;
+    isBelowSheetOpen = false;
+
+    _tokenController.text = Global.shPreferences.containsKey(TOKEN)
+        ? Global.shPreferences.getString(TOKEN)!
+        : '';
     super.initState();
     flutterV2ray = FlutterV2ray(
       onStatusChanged: (status) {
@@ -37,278 +54,253 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  Widget serverConnection(context) {
-    return new GestureDetector(
-      onTap: null,
-      child: new Row(
-        children: <Widget>[
-          new Container(
-            width: screenAwareSize(30.0, context),
-            height: screenAwareSize(30.0, context),
-            decoration: new BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white,
-              border: new Border.all(
-                width: screenAwareSize(2.0, context),
-                color: Colors.white,
-              ),
-            ),
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                image: DecorationImage(
-                  image: AssetImage('assets/performance.png'),
-                  // ...
-                ),
-                // ...
-              ),
-            ),
+  bool _canConfirmToken() => _tokenController.text.isNotEmpty;
+
+  void resetConfig() async {
+    await Global.shPreferences.clear();
+    context.read<ConnectionController>().disconnect(flutterV2ray);
+    context.read<AuthorizationController>().emit(AuthorizationStatesInitial());
+    _tokenController.clear();
+    setState(() {});
+  }
+
+
+  Widget buttonRow(BuildContext context, AuthorizationStates state) {
+    return Container(
+      alignment: Alignment.bottomCenter,
+      padding: EdgeInsets.symmetric(horizontal: 32, vertical: 10),
+      color: blackColor,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          InkWell(
+            onTap: () => state is AuthorizationStatesAuthorized
+                ? showDialog(context: context, builder: warningDialog).then((value) => value ? resetConfig() : null)
+                : _canConfirmToken()
+                    ? context
+                        .read<AuthorizationController>()
+                        .getConnectionJson(_tokenController.text)
+                    : null,
+            child: Container(
+                alignment: Alignment.center,
+                height: 56,
+                padding: EdgeInsets.symmetric(horizontal: 30),
+                decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    color: baseViewColor),
+                child: Text(
+                  state is AuthorizationStatesAuthorized
+                      ? 'Delete'
+                      : 'Register',
+                  style: TextStyle(
+                      color: state is AuthorizationStatesAuthorized
+                          ? errorColor
+                          : whiteColor,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700),
+                )),
           ),
-          SizedBox(width: screenAwareSize(10.0, context)),
-          Text(
-            "Fastest Server",
-            style: TextStyle(
-                color: Colors.white, fontFamily: "Montserrat-SemiBold"),
-          ),
-          SizedBox(width: screenAwareSize(5.0, context)),
-          Icon(Icons.arrow_drop_up, color: Colors.white)
+          InkWell(
+            onTap: () async {
+              if (state is AuthorizationStatesInitial) {
+                final Uri url = Uri.parse('https://moodiboom.com');
+                if (!await launchUrl(url))
+                  throw Exception('Could not launch $url');
+              } else
+                null;
+            },
+            child: Container(
+                height: 56,
+                alignment: Alignment.center,
+                padding: EdgeInsets.symmetric(horizontal: 30),
+                decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    color: baseViewColor),
+                child: Text(
+                  state is AuthorizationStatesAuthorized
+                      ? 'Renewal'
+                      : 'Buy a token',
+                  style: TextStyle(
+                      color: baseColor,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700),
+                )),
+          )
         ],
       ),
     );
   }
 
-  Widget buildUi(BuildContext context, ConnectingStates state) {
-    if (state is ConnectionStateConnected) {
-      return Row(
-        mainAxisSize: MainAxisSize.max,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          Center(
-              child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: <Widget>[
-              SizedBox(
-                height: 50,
-              ),
-              Text(
-                "TAP TO\nTURN OFF VPN",
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                    color: Colors.white,
-                    fontFamily: "Montserrat-SemiBold",
-                    fontSize: 16.0),
-              ),
-              SizedBox(height: screenAwareSize(35.0, context)),
-              InkWell(
-                onTap: () => context
-                    .read<ConnectionController>()
-                    .disconnect(flutterV2ray),
-                child: Container(
-                  width: screenAwareSize(190.0, context),
-                  height: screenAwareSize(190.0, context),
-                  child: Icon(
-                    Icons.power_settings_new,
-                    size: screenAwareSize(120.0, context),
-                    color: Colors.white,
-                  ),
-                  decoration: const BoxDecoration(
-                    color: Colors.green,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-              SizedBox(height: screenAwareSize(50.0, context)),
-              // serverConnection(context),
-            ],
-          ))
-        ],
-      );
-    } else if (state is ConnectionStateLoading) {
-      return Row(
-        mainAxisSize: MainAxisSize.max,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          Center(
-              child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: <Widget>[
-              SizedBox(
-                height: 50,
-              ),
-              Text(
-                "CONNECTING",
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                    color: Colors.white,
-                    fontFamily: "Montserrat-SemiBold",
-                    fontSize: 16.0),
-              ),
-              SizedBox(height: screenAwareSize(35.0, context)),
-              SpinKitRipple(
-                color: Colors.white,
-                size: 190.0,
-              ),
-              SizedBox(height: screenAwareSize(50.0, context)),
-              // serverConnection(context),
-            ],
-          ))
-        ],
-      );
-    } else if (state is ConnectionStateInitial) {
-      return Row(
-        mainAxisSize: MainAxisSize.max,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          Center(
-              child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: <Widget>[
-              SizedBox(
-                height: 50,
-              ),
-              Text(
-                "TAP TO\nTURN ON VPN",
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                    color: Colors.white,
-                    fontFamily: "Montserrat-SemiBold",
-                    fontSize: 16.0),
-              ),
-              SizedBox(height: screenAwareSize(35.0, context)),
-              InkWell(
-                onTap: () => context
-                    .read<ConnectionController>()
-                    .connect(Global.connectionJsonModel, flutterV2ray),
-                child: Container(
-                  width: screenAwareSize(190.0, context),
-                  height: screenAwareSize(190.0, context),
-                  child: Icon(
-                    Icons.power_settings_new,
-                    size: screenAwareSize(120.0, context),
-                    color: Colors.green,
-                  ),
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-              SizedBox(height: screenAwareSize(50.0, context)),
-              // serverConnection(context),
-            ],
-          ))
-        ],
-      );
-    }
-    return Container();
-  }
-
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<ConnectionController>(
-      create: (context) => ConnectionController(),
-      child: BlocConsumer<ConnectionController, ConnectingStates>(
-        listener: (context, state) {},
-        builder: (context, state) {
-          return Container(
-            width: double.infinity,
-            decoration: BoxDecoration(
-                image: new DecorationImage(
-                  image: new AssetImage("assets/map-pattern.png"),
-                  fit: BoxFit.contain,
-                ),
-                gradient: LinearGradient(
-                    colors: state is ConnectionStateConnected
-                        ? bgColorConnected
-                        : state is ConnectionStateLoading
-                            ? bgColorConnecting
-                            : bgColorDisconnected,
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    tileMode: TileMode.clamp)),
-            child: Scaffold(
-                backgroundColor: Colors.transparent,
-                drawer: MainDrawer(
-                  flutterV2ray: flutterV2ray,
-                ),
-                appBar: AppBar(
-                  iconTheme: new IconThemeData(color: Colors.white),
-                  backgroundColor: Colors.transparent,
-                  elevation: 0.0,
-                  title: Text("VPN",
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontSize: screenAwareSize(18.0, context),
-                          fontFamily: "Montserrat-Bold")),
-                  centerTitle: true,
-                ),
-                body: Stack(
-                  children: [
-                    buildUi(context, state),
-                    Align(
-                      alignment: Alignment.bottomCenter,
-                      child: Padding(
-                        padding: EdgeInsets.only(bottom: 50),
-                        child: LoadingButton(
-                            text: 'Account Info',
-                            enable: true,
-                            // isWaiting: state is TokenStateLoading,
-                            callBack: () => showDialog(
-                                  context: context,
-                                  builder: (context) => Dialog(
-                                    backgroundColor: Colors.white,
-                                    child: Container(
-                                      padding: EdgeInsets.symmetric(
-                                          vertical: 40, horizontal: 30),
-                                      child: Column(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              Text(
-                                                'Days left: ',
-                                                style: TextStyle(
-                                                    fontSize: 20,
-                                                    fontWeight:
-                                                        FontWeight.bold),
-                                              ),
-                                              Text(
-                                                '29',
-                                                style: TextStyle(fontSize: 20),
-                                              )
-                                            ],
-                                          ),
-                                          SizedBox(
-                                            height: 10,
-                                          ),
-                                          Row(
-                                            children: [
-                                              Text(
-                                                'Traffic left: ',
-                                                style: TextStyle(
-                                                    fontSize: 20,
-                                                    fontWeight:
-                                                        FontWeight.bold),
-                                              ),
-                                              Text(
-                                                '1302 MB',
-                                                style: TextStyle(fontSize: 20),
-                                              )
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                )),
+    return BlocConsumer<AuthorizationController, AuthorizationStates>(
+      listener: (context, state) {
+        // TODO: implement listener
+      },
+      builder: (context, state) {
+        return SafeArea(
+          child: Scaffold(
+              resizeToAvoidBottomInset: false,
+              body: Stack(
+                children: [
+                  Container(
+                      alignment: Alignment.center,
+                      color: baseViewColor.withOpacity(0.5),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            height: 50,
+                          ),
+                          Text('status',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                  color: whiteColor,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w400)),
+                          BlocBuilder<ConnectionController, ConnectingStates>(
+                            builder: (context, connectionState) {
+                              return Text(
+                                  state is AuthorizationStatesError
+                                      ? state.error
+                                      : state is AuthorizationStatesInitial
+                                          ? 'Not registered'
+                                          : connectionState
+                                                  is ConnectionStateInitial
+                                              ? 'Disconnected'
+                                              : connectionState
+                                                      is ConnectionStateLoading
+                                                  ? 'Connecting'
+                                                  : 'Connected',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                      color: state is AuthorizationStatesError
+                                          ? errorColor
+                                          : state is AuthorizationStatesInitial
+                                              ? whiteColor
+                                              : connectionState
+                                                      is ConnectionStateInitial
+                                                  ? errorColor
+                                                  : connectionState
+                                                          is ConnectionStateLoading
+                                                      ? connectingColor
+                                                      : baseColor,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700));
+                            },
+                          ),
+                          SizedBox(
+                            height: 30,
+                          ),
+                          InkWell(
+                              onTap: _canConfirmToken()
+                                  ? () => state is AuthorizationStatesAuthorized
+                                      ? context
+                                              .read<ConnectionController>()
+                                              .state is ConnectionStateInitial
+                                          ? context
+                                              .read<ConnectionController>()
+                                              .connect(
+                                                  Global.connectionJsonModel,
+                                                  flutterV2ray)
+                                          : context
+                                              .read<ConnectionController>()
+                                              .disconnect(flutterV2ray)
+                                      : context
+                                          .read<AuthorizationController>()
+                                          .getConnectionJson(
+                                              _tokenController.text)
+                                  : null,
+                              child: BlocBuilder<ConnectionController,
+                                  ConnectingStates>(
+                                builder: (context, state) {
+                                  return Container(
+                                      child: Image.asset(
+                                          state is ConnectionStateConnected
+                                              ? connectedGlobe
+                                              : state is ConnectionStateLoading
+                                                  ? connectingGlobe
+                                                  : disconnectedGlobe));
+                                },
+                              )),
+                        ],
+                      )),
+                  Container(
+                    height: MediaQuery.of(context).size.height / 3,
+                    child: SnappingSheet(
+                      lockOverflowDrag: true,
+                      controller: _snappingSheetControllerAbove,
+                      onSnapCompleted: (sheetPosition, snappingPosition) {
+                        setState(() => isAboveSheetOpen =
+                            snappingPosition.grabbingContentOffset == 1.0
+                                ? false
+                                : true);
+                      },
+                      snappingPositions: [
+                        SnappingPosition.factor(
+                          grabbingContentOffset: GrabbingContentOffset.top,
+                          positionFactor: 0.3,
+                        ),
+                        SnappingPosition.factor(
+                          snappingCurve: Curves.elasticOut,
+                          snappingDuration: Duration(milliseconds: 1750),
+                          positionFactor: 0.15,
+                        ),
+                      ],
+                      child: Container(),
+                      grabbingHeight: 50,
+                      grabbing: DefaultGrabbing(
+                        reverse: true,
+                        color: blackColor,
                       ),
-                    )
-                  ],
-                )),
-          );
-        },
-      ),
+                      sheetAbove: SnappingSheetContent(
+                        draggable: true,
+                        child: buttonRow(context, state),
+                      ),
+                    ),
+                  ),
+                  Container(
+                    child: SnappingSheet(
+                      lockOverflowDrag: true,
+                      snappingPositions: [
+                        SnappingPosition.factor(
+                          positionFactor: 0.05,
+                          snappingCurve: Curves.easeOutExpo,
+                          snappingDuration: Duration(seconds: 1),
+                          grabbingContentOffset: GrabbingContentOffset.top,
+                        ),
+                        SnappingPosition.factor(
+                          snappingCurve: Curves.elasticOut,
+                          snappingDuration: Duration(milliseconds: 1750),
+                          positionFactor: 0.2,
+                        ),
+                      ],
+                      child: Container(),
+                      grabbingHeight: 50,
+                      grabbing: DefaultGrabbing(
+                        color: baseViewColor,
+                        isAboveSnappingSheet: false,
+                      ),
+                      sheetBelow: SnappingSheetContent(
+                        draggable: true,
+                        child: BottomUpSnappingSheet(),
+                      ),
+                    ),
+                  ),
+                  Align(
+                    alignment: Alignment.topCenter,
+                    child: Container(
+                      height: MediaQuery.of(context).size.height / 6,
+                      child: TopDownSnappingSheet(
+                        controller: _snappingSheetControllerAbove,
+                        tokenController: _tokenController,
+                      ),
+                    ),
+                  )
+                ],
+              )),
+        );
+      },
     );
   }
 }

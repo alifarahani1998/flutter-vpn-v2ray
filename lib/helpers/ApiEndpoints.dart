@@ -1,8 +1,6 @@
-// Class for api
+// Class for API
 abstract class ApiEndpoints {
   static const String contentTypeJson = 'application/json';
-  static const String baseUrl = "http://65.108.17.123:8000/";
-
-  static const String xray = "api/v1/xray/";
-
+  static const String baseUrl = "https://api.moodiboom.net/";
+  static const String xray = "customers/config/";
 }

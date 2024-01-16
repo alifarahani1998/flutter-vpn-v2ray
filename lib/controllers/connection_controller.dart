@@ -1,7 +1,7 @@
 import 'dart:convert';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_v2ray/flutter_v2ray.dart';
-import 'package:flutter_vpn/models/connection_model.dart';
 
 abstract class ConnectingStates {}
 
@@ -11,18 +11,22 @@ class ConnectionStateLoading extends ConnectingStates {}
 
 class ConnectionStateConnected extends ConnectingStates {}
 
-class ConnectionStateError extends ConnectingStates {}
+class ConnectionStateError extends ConnectingStates {
+  final String error;
+  ConnectionStateError({required this.error});
+}
 
 class ConnectionController extends Cubit<ConnectingStates> {
   ConnectionController() : super(ConnectionStateInitial());
 
   Future<void> connect(
-      ConnectionJsonModel connectionJson, FlutterV2ray flutterV2ray) async {
+      dynamic connectionJson, FlutterV2ray flutterV2ray) async {
     emit(ConnectionStateLoading());
+    await Future.delayed(Duration(seconds: 1));
     if (await flutterV2ray.requestPermission()) {
       await flutterV2ray.startV2Ray(
         remark: "Default Remark",
-        config: jsonEncode(connectionJson),
+        config: json.encode(connectionJson),
         proxyOnly: false,
       );
       emit(ConnectionStateConnected());

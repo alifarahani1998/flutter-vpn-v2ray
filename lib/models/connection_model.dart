@@ -49,38 +49,17 @@ class ConnectionJsonModel {
 }
 
 class Dns {
-  Hosts? hosts;
   List<String>? servers;
 
-  Dns({this.hosts, this.servers});
+  Dns({this.servers});
 
   Dns.fromJson(Map<String, dynamic> json) {
-    hosts = json['hosts'] != null ? new Hosts.fromJson(json['hosts']) : null;
     servers = json['servers'].cast<String>();
   }
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = new Map<String, dynamic>();
-    if (this.hosts != null) {
-      data['hosts'] = this.hosts!.toJson();
-    }
     data['servers'] = this.servers;
-    return data;
-  }
-}
-
-class Hosts {
-  String? domainGoogleapisCn;
-
-  Hosts({this.domainGoogleapisCn});
-
-  Hosts.fromJson(Map<String, dynamic> json) {
-    domainGoogleapisCn = json['domain:googleapis.cn'];
-  }
-
-  Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['domain:googleapis.cn'] = this.domainGoogleapisCn;
     return data;
   }
 }
@@ -89,7 +68,7 @@ class Inbounds {
   String? listen;
   int? port;
   String? protocol;
-  InboundSettings? settings;
+  InboundsSettings? settings;
   Sniffing? sniffing;
   String? tag;
 
@@ -106,7 +85,7 @@ class Inbounds {
     port = json['port'];
     protocol = json['protocol'];
     settings = json['settings'] != null
-        ? new InboundSettings.fromJson(json['settings'])
+        ? new InboundsSettings.fromJson(json['settings'])
         : null;
     sniffing = json['sniffing'] != null
         ? new Sniffing.fromJson(json['sniffing'])
@@ -130,14 +109,14 @@ class Inbounds {
   }
 }
 
-class InboundSettings {
+class InboundsSettings {
   String? auth;
   bool? udp;
   int? userLevel;
 
-  InboundSettings({this.auth, this.udp, this.userLevel});
+  InboundsSettings({this.auth, this.udp, this.userLevel});
 
-  InboundSettings.fromJson(Map<String, dynamic> json) {
+  InboundsSettings.fromJson(Map<String, dynamic> json) {
     auth = json['auth'];
     udp = json['udp'];
     userLevel = json['userLevel'];
@@ -473,14 +452,27 @@ class Rules {
   String? outboundTag;
   String? port;
   String? type;
+  List<String>? domain;
+  List<String>? protocol;
+  List<String>? inboundTag;
 
-  Rules({this.ip, this.outboundTag, this.port, this.type});
+  Rules(
+      {this.ip,
+      this.outboundTag,
+      this.port,
+      this.type,
+      this.domain,
+      this.protocol,
+      this.inboundTag});
 
   Rules.fromJson(Map<String, dynamic> json) {
     ip = json['ip'].cast<String>();
     outboundTag = json['outboundTag'];
     port = json['port'];
     type = json['type'];
+    domain = json['domain'].cast<String>();
+    protocol = json['protocol'].cast<String>();
+    inboundTag = json['inboundTag'].cast<String>();
   }
 
   Map<String, dynamic> toJson() {
@@ -489,6 +481,9 @@ class Rules {
     data['outboundTag'] = this.outboundTag;
     data['port'] = this.port;
     data['type'] = this.type;
+    data['domain'] = this.domain;
+    data['protocol'] = this.protocol;
+    data['inboundTag'] = this.inboundTag;
     return data;
   }
 }

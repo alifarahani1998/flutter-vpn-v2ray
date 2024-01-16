@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
-import 'package:flutter_vpn/helpers/ApiClient.dart';
-import 'package:flutter_vpn/helpers/ApiEndpoints.dart';
-import 'package:flutter_vpn/models/connection_model.dart';
+import 'package:moodiboom/helpers/ApiClient.dart';
+import 'package:moodiboom/helpers/ApiEndpoints.dart';
+// import 'package:moodiboom/models/connection_model.dart';
 import 'package:logger/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -11,7 +11,7 @@ typedef OnValueCallback = void Function(int value);
 
 abstract class Global {
   static String apiToken = '';
-  static ConnectionJsonModel connectionJsonModel = new ConnectionJsonModel();
+  static dynamic connectionJsonModel = '';
 
   static ApiClient apiClient = new ApiClient(Dio(BaseOptions(
     contentType: ApiEndpoints.contentTypeJson,

@@ -5,11 +5,11 @@ class _ApiClient implements ApiClient {
   String? baseUrl;
 
   _ApiClient(this._dio, {this.baseUrl}) {
-    baseUrl ??= 'http://65.108.17.123:8000/';
+    baseUrl ??= 'https://api.moodiboom.net/';
   }
 
   @override
-  Future<ConnectionJsonModel> getConnectionJson(tokenModel) async {
+  Future<dynamic> getConnectionJson(tokenModel) async {
     const _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _data = <String, dynamic>{};
@@ -17,11 +17,11 @@ class _ApiClient implements ApiClient {
     final _result = await _dio.fetch<Map<String, dynamic>>(
         _setStreamType<ConnectionJsonModel>(
             Options(method: 'POST', headers: <String, dynamic>{}, extra: _extra)
-                .compose(_dio.options, 'api/v1/xray/',
+                .compose(_dio.options, 'customers/config/',
                     queryParameters: queryParameters, data: _data)
                 .copyWith(baseUrl: baseUrl ?? _dio.options.baseUrl)));
-    var value = ConnectionJsonModel.fromJson(_result.data!);
-    return value;
+    // var value = ConnectionJsonModel.fromJson(_result.data!);
+    return _result.data;
   }
 
   RequestOptions _setStreamType<T>(RequestOptions requestOptions) {

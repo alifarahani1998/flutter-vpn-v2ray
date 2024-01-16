@@ -1,4 +1,4 @@
-name: flutter_vpn
+name: moodiboom
 description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
@@ -39,10 +39,16 @@ dependencies:
   flutter_bloc: ^7.1.0
   http: '>=0.13.6 <2.0.0'
   dio: ^5.4.0
+  permission_handler: ^8.1.6
   retrofit: ^2.0.1
   shared_preferences: ^2.0.8
+  snapping_sheet: ^3.0.0+2
   logger: ^1.1.0
   flutter_phoenix: ^1.0.0
+  flutter_svg: ^2.0.9
+  url_launcher: ^6.2.3
+  flutter_screenutil: ^5.9.0
+  qr_code_scanner: ^1.0.0
   flutter_v2ray:
     path: /Users/ali/.pub-cache/hosted/pub.dev/flutter_v2ray-1.0.4
 
@@ -70,30 +76,28 @@ flutter:
 
 
   assets:
-    - assets/map-pattern.png
-    - assets/tr.png
-    - assets/us.png
-    - assets/uk.png
-    - assets/ger.png
-    - assets/fr.png
-    - assets/can.png
-    - assets/net.png
-    - assets/sing.png
-    - assets/performance.png
-    - assets/turbo.png
+    - assets/fonts/
+    - assets/icons/
+    - assets/images/
 
   fonts:
-    - family: Montserrat-Bold
+    - family: Gilroy-Bold
       fonts:
-        - asset: assets/Montserrat-Bold.ttf
+        - asset: assets/fonts/Gilroy-Bold.ttf
 
-    - family: Montserrat-Medium
+    - family: Gilroy-Regular
       fonts:
-        - asset: assets/Montserrat-Medium.ttf
+        - asset: assets/fonts/Gilroy-Regular.ttf
 
-    - family: Montserrat-SemiBold
+    - family: Gilroy-Medium
       fonts:
-        - asset: assets/Montserrat-SemiBold.ttf
+        - asset: assets/fonts/Gilroy-Medium.ttf
+    
+    - family: Gilroy-Heavy
+      fonts:
+        - asset: assets/fonts/Gilroy-Heavy.ttf
+
+    
 
   # To add assets to your application, add an assets section, like this:
   # assets:
