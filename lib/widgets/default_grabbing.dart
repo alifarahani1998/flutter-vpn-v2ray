@@ -73,9 +73,12 @@ class _GrabbingIndicator extends StatelessWidget {
             height: 5,
             width: 75,
           )
-        : SvgPicture.asset(
-            arrow_up,
-            width: 40,
+        : Padding(
+            padding: const EdgeInsets.only(top: 5.0),
+            child: SvgPicture.asset(
+              arrowUp,
+              width: 40,
+            ),
           );
   }
 }

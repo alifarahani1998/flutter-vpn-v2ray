@@ -1,19 +1,21 @@
+import 'dart:async';
 import 'dart:ui';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-// import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:flutter_v2ray/flutter_v2ray.dart';
 import 'package:moodiboom/controllers/authorization_controller.dart';
 import 'package:moodiboom/controllers/connection_controller.dart';
+import 'package:moodiboom/controllers/counter_controller.dart';
+import 'package:moodiboom/controllers/details_info_controller.dart';
+import 'package:moodiboom/helpers/extensions.dart';
 import 'package:moodiboom/helpers/global.dart';
-// import 'package:moodiboom/helpers/global.dart';
 import 'package:moodiboom/utils/constants.dart';
 import 'package:moodiboom/widgets/bottom_up_snapping_sheet.dart';
 import 'package:moodiboom/widgets/default_grabbing.dart';
 import 'package:moodiboom/widgets/dialogs.dart';
+import 'package:moodiboom/widgets/main_button.dart';
 import 'package:moodiboom/widgets/top_down_snapping_sheet.dart';
 import 'package:snapping_sheet/snapping_sheet.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -29,19 +31,25 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
   late final FlutterV2ray flutterV2ray;
   TextEditingController _tokenController = new TextEditingController();
   final SnappingSheetController _snappingSheetControllerAbove =
-      SnappingSheetController();
+      new SnappingSheetController();
+  final SnappingSheetController _snappingSheetControllerBelow =
+      new SnappingSheetController();
   late bool isAboveSheetOpen;
   late bool isBelowSheetOpen;
+  late bool connectedFromGlobe;
+  final Uri url = Uri.parse('https://moodiboom.com');
+  late Timer _aboveTimer;
+  late Timer _belowTimer;
 
   @override
   void initState() {
-    isAboveSheetOpen = false;
-    isBelowSheetOpen = false;
-
+    super.initState();
     _tokenController.text = Global.shPreferences.containsKey(TOKEN)
         ? Global.shPreferences.getString(TOKEN)!
         : '';
-    super.initState();
+    isAboveSheetOpen = false;
+    isBelowSheetOpen = false;
+    connectedFromGlobe = false;
     flutterV2ray = FlutterV2ray(
       onStatusChanged: (status) {
         v2rayStatus.value = status;
@@ -54,16 +62,48 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  bool _canConfirmToken() => _tokenController.text.isNotEmpty;
-
   void resetConfig() async {
     await Global.shPreferences.clear();
     context.read<ConnectionController>().disconnect(flutterV2ray);
     context.read<AuthorizationController>().emit(AuthorizationStatesInitial());
+    context.read<DetailsInfoController>().emit(DetailsInfoStateInitial());
     _tokenController.clear();
     setState(() {});
   }
 
+  void autoScrollSnappingSheetAbove() async {
+    int counter = 5;
+    _aboveTimer = Timer.periodic(Duration(seconds: 1), (timer) {
+      if (counter == 0) {
+        if (isAboveSheetOpen)
+          _snappingSheetControllerAbove.snapToPosition(
+            SnappingPosition.factor(
+              grabbingContentOffset: GrabbingContentOffset.top,
+              positionFactor: 0.3,
+            ),
+          );
+        timer.cancel();
+      } else
+        counter--;
+    });
+  }
+
+  void autoScrollSnappingSheetBelow() async {
+    int counter = 5;
+    _belowTimer = Timer.periodic(Duration(seconds: 1), (timer) {
+      if (counter == 0) {
+        if (isBelowSheetOpen)
+          _snappingSheetControllerBelow.snapToPosition(SnappingPosition.factor(
+            positionFactor: 0.05,
+            snappingCurve: Curves.easeOutExpo,
+            snappingDuration: Duration(seconds: 1),
+            grabbingContentOffset: GrabbingContentOffset.top,
+          ));
+        timer.cancel();
+      } else
+        counter--;
+    });
+  }
 
   Widget buttonRow(BuildContext context, AuthorizationStates state) {
     return Container(
@@ -73,58 +113,39 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          InkWell(
-            onTap: () => state is AuthorizationStatesAuthorized
-                ? showDialog(context: context, builder: warningDialog).then((value) => value ? resetConfig() : null)
-                : _canConfirmToken()
-                    ? context
-                        .read<AuthorizationController>()
-                        .getConnectionJson(_tokenController.text)
-                    : null,
-            child: Container(
-                alignment: Alignment.center,
-                height: 56,
-                padding: EdgeInsets.symmetric(horizontal: 30),
-                decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    color: baseViewColor),
-                child: Text(
-                  state is AuthorizationStatesAuthorized
-                      ? 'Delete'
-                      : 'Register',
-                  style: TextStyle(
-                      color: state is AuthorizationStatesAuthorized
-                          ? errorColor
-                          : whiteColor,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700),
-                )),
+          Expanded(
+            child: MainButton(
+              text: state is AuthorizationStatesAuthorized
+                  ? 'Delete'
+                  : 'Register',
+              onPressed: () => state is AuthorizationStatesAuthorized
+                  ? showDialog(context: context, builder: warningDialog)
+                      .then((value) => value ? resetConfig() : null)
+                  : _tokenController.text.canConfirmToken()
+                      ? context
+                          .read<AuthorizationController>()
+                          .getConnectionConfig(_tokenController.text)
+                      : null,
+              isWaiting: state is AuthorizationStatesLoading,
+              color: state is AuthorizationStatesAuthorized
+                  ? errorColor
+                  : whiteColor,
+            ),
           ),
-          InkWell(
-            onTap: () async {
-              if (state is AuthorizationStatesInitial) {
-                final Uri url = Uri.parse('https://moodiboom.com');
-                if (!await launchUrl(url))
-                  throw Exception('Could not launch $url');
-              } else
-                null;
-            },
-            child: Container(
-                height: 56,
-                alignment: Alignment.center,
-                padding: EdgeInsets.symmetric(horizontal: 30),
-                decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    color: baseViewColor),
-                child: Text(
-                  state is AuthorizationStatesAuthorized
-                      ? 'Renewal'
-                      : 'Buy a token',
-                  style: TextStyle(
-                      color: baseColor,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700),
-                )),
+          SizedBox(
+            width: 10,
+          ),
+          Expanded(
+            child: MainButton(
+              onPressed: () async => state is AuthorizationStatesInitial
+                  ? await launchUrl(url)
+                  : null,
+              text: state is AuthorizationStatesAuthorized
+                  ? 'Renewal'
+                  : 'Buy a token',
+              color: baseColor,
+              isWaiting: state is AuthorizationStatesLoading,
+            ),
           )
         ],
       ),
@@ -135,7 +156,15 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     return BlocConsumer<AuthorizationController, AuthorizationStates>(
       listener: (context, state) {
-        // TODO: implement listener
+        if (state is AuthorizationStatesAuthorized) {
+          _tokenController.text = Global.shPreferences.getString(TOKEN)!;
+          if (connectedFromGlobe) {
+            context
+                .read<ConnectionController>()
+                .connect(Global.connectionJsonModel, flutterV2ray);
+            connectedFromGlobe = false;
+          }
+        }
       },
       builder: (context, state) {
         return SafeArea(
@@ -165,18 +194,22 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
                                       ? state.error
                                       : state is AuthorizationStatesInitial
                                           ? 'Not registered'
-                                          : connectionState
-                                                  is ConnectionStateInitial
-                                              ? 'Disconnected'
+                                          : state is AuthorizationStatesLoading
+                                              ? 'Registering...'
                                               : connectionState
-                                                      is ConnectionStateLoading
-                                                  ? 'Connecting'
-                                                  : 'Connected',
+                                                      is ConnectionStateInitial
+                                                  ? 'Disconnected'
+                                                  : connectionState
+                                                          is ConnectionStateLoading
+                                                      ? 'Connecting'
+                                                      : 'Connected',
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                       color: state is AuthorizationStatesError
                                           ? errorColor
-                                          : state is AuthorizationStatesInitial
+                                          : state is AuthorizationStatesInitial ||
+                                                  state
+                                                      is AuthorizationStatesLoading
                                               ? whiteColor
                                               : connectionState
                                                       is ConnectionStateInitial
@@ -189,40 +222,120 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
                                       fontWeight: FontWeight.w700));
                             },
                           ),
+                          BlocConsumer<ConnectionController, ConnectingStates>(
+                            listener: (context, state) {
+                              if (state is ConnectionStateConnected) {
+                                context
+                                    .read<DetailsInfoController>()
+                                    .getConnectionDetails();
+                                _snappingSheetControllerBelow.snapToPosition(
+                                  SnappingPosition.factor(
+                                    snappingCurve: Curves.elasticOut,
+                                    snappingDuration:
+                                        Duration(milliseconds: 200),
+                                    positionFactor: 0.2,
+                                  ),
+                                );
+                                context
+                                    .read<CounterController>()
+                                    .startSecondTimer();
+                                context
+                                    .read<CounterController>()
+                                    .startMinuteTimer();
+                                context
+                                    .read<CounterController>()
+                                    .startHourTimer();
+                              } else if (state is ConnectionStateInitial)
+                                context
+                                    .read<CounterController>()
+                                    .stopAllTimers();
+                            },
+                            builder: (context, state) => state
+                                    is ConnectionStateConnected
+                                ? BlocBuilder<CounterController, CounterStates>(
+                                    builder: (context, state) {
+                                      return state is CounterStateCounting
+                                          ? Text(
+                                              context
+                                                      .read<CounterController>()
+                                                      .hour +
+                                                  ' : ' +
+                                                  context
+                                                      .read<CounterController>()
+                                                      .minute +
+                                                  ' : ' +
+                                                  context
+                                                      .read<CounterController>()
+                                                      .second,
+                                              textAlign: TextAlign.center,
+                                              style: TextStyle(
+                                                  color: whiteColor,
+                                                  fontSize: 24,
+                                                  fontWeight: FontWeight.w700),
+                                            )
+                                          : Container();
+                                    },
+                                  )
+                                : Container(),
+                          ),
                           SizedBox(
                             height: 30,
                           ),
-                          InkWell(
-                              onTap: _canConfirmToken()
-                                  ? () => state is AuthorizationStatesAuthorized
+                          Theme(
+                            data: Theme.of(context).copyWith(
+                              highlightColor: Colors.transparent,
+                              splashColor: Colors.transparent,
+                              hoverColor: Colors.transparent,
+                            ),
+                            child: InkWell(onTap: () {
+                              if (_tokenController.text.canConfirmToken()) {
+                                if (state is AuthorizationStatesAuthorized) {
+                                  context.read<ConnectionController>().state
+                                          is ConnectionStateInitial
                                       ? context
-                                              .read<ConnectionController>()
-                                              .state is ConnectionStateInitial
-                                          ? context
-                                              .read<ConnectionController>()
-                                              .connect(
-                                                  Global.connectionJsonModel,
-                                                  flutterV2ray)
-                                          : context
-                                              .read<ConnectionController>()
-                                              .disconnect(flutterV2ray)
+                                          .read<ConnectionController>()
+                                          .connect(Global.connectionJsonModel,
+                                              flutterV2ray)
                                       : context
-                                          .read<AuthorizationController>()
-                                          .getConnectionJson(
-                                              _tokenController.text)
-                                  : null,
-                              child: BlocBuilder<ConnectionController,
-                                  ConnectingStates>(
-                                builder: (context, state) {
-                                  return Container(
-                                      child: Image.asset(
-                                          state is ConnectionStateConnected
-                                              ? connectedGlobe
-                                              : state is ConnectionStateLoading
-                                                  ? connectingGlobe
-                                                  : disconnectedGlobe));
-                                },
-                              )),
+                                          .read<ConnectionController>()
+                                          .disconnect(flutterV2ray);
+                                } else {
+                                  connectedFromGlobe = true;
+                                  context
+                                      .read<AuthorizationController>()
+                                      .getConnectionConfig(
+                                          _tokenController.text);
+                                }
+                              }
+                            }, child: BlocBuilder<ConnectionController,
+                                ConnectingStates>(
+                              builder: (context, state) {
+                                return Container(
+                                    child: Image.asset(
+                                        state is ConnectionStateConnected
+                                            ? connectedGlobe
+                                            : state is ConnectionStateLoading
+                                                ? connectingGlobe
+                                                : disconnectedGlobe));
+                              },
+                            )),
+                          ),
+                          BlocBuilder<ConnectionController, ConnectingStates>(
+                            builder: (context, state) =>
+                                state is ConnectionStateConnected
+                                    ? TextButton(
+                                        onPressed: () => context
+                                            .read<ConnectionController>()
+                                            .disconnect(flutterV2ray),
+                                        child: Text(
+                                          'Disconnect',
+                                          style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w700,
+                                              color: errorColor),
+                                        ))
+                                    : Container(),
+                          )
                         ],
                       )),
                   Container(
@@ -231,10 +344,17 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
                       lockOverflowDrag: true,
                       controller: _snappingSheetControllerAbove,
                       onSnapCompleted: (sheetPosition, snappingPosition) {
-                        setState(() => isAboveSheetOpen =
-                            snappingPosition.grabbingContentOffset == 1.0
-                                ? false
-                                : true);
+                        if (snappingPosition.grabbingContentOffset == 1.0) {
+                          setState(() {
+                            isAboveSheetOpen = false;
+                          });
+                          _aboveTimer.cancel();
+                        } else {
+                          setState(() {
+                            isAboveSheetOpen = true;
+                            autoScrollSnappingSheetAbove();
+                          });
+                        }
                       },
                       snappingPositions: [
                         SnappingPosition.factor(
@@ -243,7 +363,7 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
                         ),
                         SnappingPosition.factor(
                           snappingCurve: Curves.elasticOut,
-                          snappingDuration: Duration(milliseconds: 1750),
+                          snappingDuration: Duration(milliseconds: 200),
                           positionFactor: 0.15,
                         ),
                       ],
@@ -261,31 +381,43 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
                   ),
                   Container(
                     child: SnappingSheet(
-                      lockOverflowDrag: true,
-                      snappingPositions: [
-                        SnappingPosition.factor(
-                          positionFactor: 0.05,
-                          snappingCurve: Curves.easeOutExpo,
-                          snappingDuration: Duration(seconds: 1),
-                          grabbingContentOffset: GrabbingContentOffset.top,
+                        lockOverflowDrag: true,
+                        controller: _snappingSheetControllerBelow,
+                        snappingPositions: [
+                          SnappingPosition.factor(
+                            positionFactor: 0.05,
+                            snappingCurve: Curves.easeOutExpo,
+                            snappingDuration: Duration(seconds: 1),
+                            grabbingContentOffset: GrabbingContentOffset.top,
+                          ),
+                          SnappingPosition.factor(
+                            snappingCurve: Curves.elasticOut,
+                            snappingDuration: Duration(milliseconds: 200),
+                            positionFactor: 0.2,
+                          ),
+                        ],
+                        child: Container(),
+                        grabbingHeight: 50,
+                        grabbing: DefaultGrabbing(
+                          color: baseViewColor,
+                          isAboveSnappingSheet: false,
                         ),
-                        SnappingPosition.factor(
-                          snappingCurve: Curves.elasticOut,
-                          snappingDuration: Duration(milliseconds: 1750),
-                          positionFactor: 0.2,
+                        sheetBelow: SnappingSheetContent(
+                          draggable: true,
+                          child: BottomUpSnappingSheet(),
                         ),
-                      ],
-                      child: Container(),
-                      grabbingHeight: 50,
-                      grabbing: DefaultGrabbing(
-                        color: baseViewColor,
-                        isAboveSnappingSheet: false,
-                      ),
-                      sheetBelow: SnappingSheetContent(
-                        draggable: true,
-                        child: BottomUpSnappingSheet(),
-                      ),
-                    ),
+                        onSnapCompleted: (sheetPosition, snappingPosition) {
+                          if (snappingPosition.grabbingContentOffset == 0.0) {
+                            context
+                                .read<DetailsInfoController>()
+                                .getConnectionDetails();
+                            isBelowSheetOpen = true;
+                            autoScrollSnappingSheetBelow();
+                          } else {
+                            isBelowSheetOpen = false;
+                            _belowTimer.cancel();
+                          }
+                        }),
                   ),
                   Align(
                     alignment: Alignment.topCenter,
@@ -294,6 +426,8 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
                       child: TopDownSnappingSheet(
                         controller: _snappingSheetControllerAbove,
                         tokenController: _tokenController,
+                        isAboveSheetOpen: isAboveSheetOpen,
+                        flutterV2ray: flutterV2ray,
                       ),
                     ),
                   )

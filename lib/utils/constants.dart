@@ -1,23 +1,17 @@
 import 'package:flutter/material.dart';
 
-double baseHeight = 640.0;
-
-double screenAwareSize(double size, BuildContext context) {
-  return size * MediaQuery.of(context).size.height / baseHeight;
-}
-
 // constants
-const String moodiboom = 'moodiboom';
-const String disconnectedText = 'Your internet is not private';
-const String connectedText = 'Your internet is private';
-const String connectingText = 'Securing your connection...';
+const String internetText = 'Your internet is ';
+const String securingConnectionText = 'Securing your ';
 const String TOKEN = 'TOKEN';
+const String IS_CONNECTED = 'IS_CONNECTED';
 
 // icons & images
-const String qr_svg = 'assets/icons/qr.svg';
-const String arrow_up = 'assets/icons/arrow_up.svg';
+const String qrSvg = 'assets/icons/qr.svg';
+const String arrowUp = 'assets/icons/arrow_up.svg';
 const String calendar = 'assets/icons/calendar.svg';
 const String traffic = 'assets/icons/traffic.svg';
+const String logoText = 'assets/icons/logo_text.svg';
 const String maskUpRight = 'assets/images/mask_ur.png';
 const String maskDownLeft = 'assets/images/mask_dl.png';
 const String maskRight = 'assets/images/mask_right.png';
@@ -28,7 +22,7 @@ const String connectedGlobe = 'assets/images/ConnectedGlobe.png';
 // colors
 const Color blackColor = Color(0xFF000000);
 const Color baseViewColor = Color(0xFF343434);
-const Color errorColor = Color(0xFFE63946);
+const Color errorColor = Color(0xFFFF6868);
 const Color deepBlueColor = Color(0xFF185BFF);
 const Color whiteColor = Color(0xFFF0F5F5);
 const Color connectingColor = Color(0xFFFFA133);
@@ -37,7 +31,6 @@ const Color baseColor = Color(0xFFCAFD39);
 // pages
 const String SPLASH_PAGE = "SPLASH_PAGE";
 const String MAIN_PAGE = 'MAIN_PAGE';
-const String QR_SCANNER_PAGE = 'QR_SCANNER_PAGE';
 
 
 // global variables

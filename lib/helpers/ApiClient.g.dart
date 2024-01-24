@@ -9,7 +9,7 @@ class _ApiClient implements ApiClient {
   }
 
   @override
-  Future<dynamic> getConnectionJson(tokenModel) async {
+  Future<dynamic> getConnectionConfig(tokenModel) async {
     const _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _data = <String, dynamic>{};
@@ -22,6 +22,22 @@ class _ApiClient implements ApiClient {
                 .copyWith(baseUrl: baseUrl ?? _dio.options.baseUrl)));
     // var value = ConnectionJsonModel.fromJson(_result.data!);
     return _result.data;
+  }
+
+  @override
+  Future<DetailsInfoModel> getConnectionDetails(tokenModel) async {
+    const _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{};
+    final _data = <String, dynamic>{};
+    _data.addAll(tokenModel.toJson());
+    final _result = await _dio.fetch<Map<String, dynamic>>(
+        _setStreamType<DetailsInfoModel>(
+            Options(method: 'POST', headers: <String, dynamic>{}, extra: _extra)
+                .compose(_dio.options, 'customers/config/details/',
+                    queryParameters: queryParameters, data: _data)
+                .copyWith(baseUrl: baseUrl ?? _dio.options.baseUrl)));
+    var value = DetailsInfoModel.fromJson(_result.data!);
+    return value;
   }
 
   RequestOptions _setStreamType<T>(RequestOptions requestOptions) {

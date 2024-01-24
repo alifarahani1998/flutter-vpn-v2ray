@@ -7,9 +7,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 abstract class AuthorizationStates {}
 
-class AuthorizationStatesInitial extends AuthorizationStates {}
+class AuthorizationStatesInitial extends AuthorizationStates {} // unauthorized
 
 class AuthorizationStatesAuthorized extends AuthorizationStates {}
+
+class AuthorizationStatesLoading extends AuthorizationStates {}
 
 class AuthorizationStatesError extends AuthorizationStates {
   final String error;
@@ -23,16 +25,21 @@ class AuthorizationController extends Cubit<AuthorizationStates> {
 
   Future isAuthorized() async {
     Global.shPreferences = await SharedPreferences.getInstance();
+    if (Global.shPreferences.containsKey(IS_CONNECTED) &&
+        Global.shPreferences.getBool(IS_CONNECTED)!) {
+      emit(AuthorizationStatesAuthorized());
+      return;
+    }
     if (Global.shPreferences.containsKey(TOKEN))
-      await getConnectionJson(Global.shPreferences.getString(TOKEN)!);
+      await getConnectionConfig(Global.shPreferences.getString(TOKEN)!);
     else
       emit(AuthorizationStatesInitial());
   }
 
-  Future<void> getConnectionJson(String token) async {
-      
+  Future<void> getConnectionConfig(String token) async {
+    emit(AuthorizationStatesLoading());
     await Global.apiClient
-        .getConnectionJson(TokenModel(token: token))
+        .getConnectionConfig(TokenModel(token: token))
         .then((value) async {
       emit(AuthorizationStatesAuthorized());
       await Global.shPreferences.setString(TOKEN, token);
@@ -44,10 +51,8 @@ class AuthorizationController extends Cubit<AuthorizationStates> {
         case DioError:
           final res = (obj as DioError).response;
           switch (res?.statusCode) {
-            case 500:
-              emit(AuthorizationStatesError(error: 'Token is invalid!'));
-              break;
             default:
+              emit(AuthorizationStatesError(error: 'Token is not valid!'));
               break;
           }
           break;

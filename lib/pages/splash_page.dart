@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:moodiboom/utils/constants.dart';
 
 class SplashPage extends StatelessWidget {
@@ -26,15 +27,7 @@ class SplashPage extends StatelessWidget {
                     color: baseColor,
                   ),
                 ),
-                Text(
-                  moodiboom,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                      color: baseColor,
-                      fontFamily: 'Gilroy-Heavy',
-                      fontSize: 48,
-                      fontWeight: FontWeight.w900),
-                ),
+                SvgPicture.asset(logoText),
                 Align(
                   alignment: Alignment.bottomLeft,
                   child: Image.asset(

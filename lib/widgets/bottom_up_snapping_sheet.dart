@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:moodiboom/controllers/connection_controller.dart';
+import 'package:moodiboom/controllers/details_info_controller.dart';
 import 'package:moodiboom/utils/constants.dart';
 
 class BottomUpSnappingSheet extends StatelessWidget {
@@ -23,112 +24,147 @@ class BottomUpSnappingSheet extends StatelessWidget {
                   Container(
                     color: baseViewColor,
                     alignment: Alignment.topCenter,
-                    child: Text(
-                      state is ConnectionStateInitial ||
-                              state is ConnectionStateError
-                          ? disconnectedText
-                          : state is ConnectionStateLoading
-                              ? connectingText
-                              : connectedText,
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                    ),
+                    // child: Text(
+                    //   state is ConnectionStateInitial ||
+                    //           state is ConnectionStateError
+                    //       ? disconnectedText
+                    //       : state is ConnectionStateLoading
+                    //           ? connectingText
+                    //           : connectedText,
+                    //   style:
+                    //       TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                    // ),
+                    child: Text.rich(TextSpan(
+                        text: state is ConnectionStateLoading
+                            ? securingConnectionText
+                            : internetText,
+                        children: [
+                          TextSpan(
+                              text: state is ConnectionStateInitial ||
+                                      state is ConnectionStateError
+                                  ? 'not private'
+                                  : state is ConnectionStateLoading
+                                      ? 'connection...'
+                                      : 'private',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: state is ConnectionStateInitial ||
+                                        state is ConnectionStateError
+                                    ? errorColor
+                                    : state is ConnectionStateLoading
+                                        ? whiteColor
+                                        : baseColor,
+                              ))
+                        ],
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w700))),
                   ),
-                  Container(
-                    color: baseViewColor,
-                    margin: EdgeInsets.symmetric(vertical: 20),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          padding: EdgeInsets.symmetric(
-                              horizontal: 24, vertical: 10),
-                          decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16),
-                              color: blackColor.withOpacity(0.15)),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: EdgeInsets.all(5),
-                                decoration: BoxDecoration(
-                                    color: whiteColor,
-                                    borderRadius: BorderRadius.circular(8)),
-                                child: SvgPicture.asset(
-                                  calendar,
-                                  color: blackColor,
-                                ),
-                              ),
-                              SizedBox(
-                                width: 5,
-                              ),
-                              Column(
+                  BlocBuilder<DetailsInfoController, DetailsInfoStates>(
+                    builder: (context, state) {
+                      return Container(
+                        color: baseViewColor,
+                        margin: EdgeInsets.symmetric(vertical: 20),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 24, vertical: 10),
+                              decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(16),
+                                  color: blackColor.withOpacity(0.15)),
+                              child: Row(
                                 children: [
-                                  Text(
-                                    'Days left',
-                                    style: TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w500,
-                                        color: whiteColor),
+                                  Container(
+                                    padding: EdgeInsets.all(5),
+                                    decoration: BoxDecoration(
+                                        color: whiteColor,
+                                        borderRadius: BorderRadius.circular(8)),
+                                    child: SvgPicture.asset(
+                                      calendar,
+                                      color: blackColor,
+                                    ),
                                   ),
-                                  Text(
-                                    '12 d',
-                                    style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500,
-                                        color: whiteColor),
+                                  SizedBox(
+                                    width: 5,
                                   ),
+                                  Column(
+                                    children: [
+                                      Text(
+                                        'Days left',
+                                        style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w500,
+                                            color: whiteColor),
+                                      ),
+                                      Text(
+                                        state is DetailsInfoStateLoaded
+                                            ? state.daysLeft.toString() + ' d'
+                                            : '...',
+                                        style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w500,
+                                            color: whiteColor),
+                                      ),
+                                    ],
+                                  )
                                 ],
-                              )
-                            ],
-                          ),
-                        ),
-                        SizedBox(
-                          width: 10,
-                        ),
-                        Container(
-                          padding: EdgeInsets.symmetric(
-                              horizontal: 24, vertical: 10),
-                          decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16),
-                              color: blackColor.withOpacity(0.15)),
-                          child: Row(
-                            children: [
-                              Container(
-                                decoration: BoxDecoration(
-                                    color: whiteColor,
-                                    borderRadius: BorderRadius.circular(8)),
-                                padding: EdgeInsets.all(5),
-                                child: SvgPicture.asset(
-                                  traffic,
-                                  color: blackColor,
-                                ),
                               ),
-                              SizedBox(
-                                width: 5,
-                              ),
-                              Column(
+                            ),
+                            SizedBox(
+                              width: 10,
+                            ),
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 24, vertical: 10),
+                              decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(16),
+                                  color: blackColor.withOpacity(0.15)),
+                              child: Row(
                                 children: [
-                                  Text(
-                                    'Traffic left',
-                                    style: TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w500,
-                                        color: whiteColor),
+                                  Container(
+                                    decoration: BoxDecoration(
+                                        color: whiteColor,
+                                        borderRadius: BorderRadius.circular(8)),
+                                    padding: EdgeInsets.all(5),
+                                    child: SvgPicture.asset(
+                                      traffic,
+                                      color: blackColor,
+                                    ),
                                   ),
-                                  Text(
-                                    '45 GB',
-                                    style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500,
-                                        color: whiteColor),
+                                  SizedBox(
+                                    width: 5,
                                   ),
+                                  Column(
+                                    children: [
+                                      Text(
+                                        'Traffic left',
+                                        style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w500,
+                                            color: whiteColor),
+                                      ),
+                                      Text(
+                                        state is DetailsInfoStateLoaded
+                                            ? state.trafficLeft!
+                                                    .toStringAsFixed(2) +
+                                                ' GB'
+                                            : '...',
+                                        style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w500,
+                                            color: whiteColor),
+                                      ),
+                                    ],
+                                  )
                                 ],
-                              )
-                            ],
-                          ),
-                        )
-                      ],
-                    ),
+                              ),
+                            )
+                          ],
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),

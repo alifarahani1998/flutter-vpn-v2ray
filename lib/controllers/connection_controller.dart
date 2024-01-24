@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:convert';
-
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_v2ray/flutter_v2ray.dart';
+import 'package:moodiboom/helpers/global.dart';
+import 'package:moodiboom/utils/constants.dart';
 
 abstract class ConnectingStates {}
 
@@ -17,10 +19,17 @@ class ConnectionStateError extends ConnectingStates {
 }
 
 class ConnectionController extends Cubit<ConnectingStates> {
-  ConnectionController() : super(ConnectionStateInitial());
+  ConnectionController() : super(ConnectionStateInitial()) {
+    checkLastConnectionState();
+  }
 
-  Future<void> connect(
-      dynamic connectionJson, FlutterV2ray flutterV2ray) async {
+  void checkLastConnectionState() {
+    if (Global.shPreferences.containsKey(IS_CONNECTED) &&
+        Global.shPreferences.getBool(IS_CONNECTED)!)
+      emit(ConnectionStateConnected());
+  }
+
+  Future<void> connect(dynamic connectionJson, FlutterV2ray flutterV2ray) async {
     emit(ConnectionStateLoading());
     await Future.delayed(Duration(seconds: 1));
     if (await flutterV2ray.requestPermission()) {
@@ -30,22 +39,14 @@ class ConnectionController extends Cubit<ConnectingStates> {
         proxyOnly: false,
       );
       emit(ConnectionStateConnected());
+      Global.shPreferences.setBool(IS_CONNECTED, true);
     }
-    // else {
-    //   if (context.mounted) {
-    //     ScaffoldMessenger.of(context).showSnackBar(
-    //       const SnackBar(
-    //         content: Text('Permission Denied'),
-    //       ),
-    //     );
-    //   }
-    // }
   }
 
   Future<void> disconnect(FlutterV2ray flutterV2ray) async {
-    emit(ConnectionStateLoading());
     await flutterV2ray.stopV2Ray();
     emit(ConnectionStateInitial());
+    Global.shPreferences.setBool(IS_CONNECTED, false);
   }
 
   // void delay(String connectionJson) async {
