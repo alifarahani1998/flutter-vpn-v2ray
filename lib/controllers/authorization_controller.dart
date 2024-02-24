@@ -25,11 +25,6 @@ class AuthorizationController extends Cubit<AuthorizationStates> {
 
   Future isAuthorized() async {
     Global.shPreferences = await SharedPreferences.getInstance();
-    if (Global.shPreferences.containsKey(IS_CONNECTED) &&
-        Global.shPreferences.getBool(IS_CONNECTED)!) {
-      emit(AuthorizationStatesAuthorized());
-      return;
-    }
     if (Global.shPreferences.containsKey(TOKEN))
       await getConnectionConfig(Global.shPreferences.getString(TOKEN)!);
     else

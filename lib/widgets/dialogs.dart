@@ -4,23 +4,23 @@ import 'package:moodiboom/utils/constants.dart';
 
 
 
-  Widget warningDialog(BuildContext context) {
+  Widget warningDialog(BuildContext context, String title, String firstOption, String secondOption) {
     return CupertinoAlertDialog(
       // title: Text('Cupertino Alert Dialog'),
       content: Text(
-        'Are you sure\nyou want to delete your token?',
+        title,
       ),
       actions: <Widget>[
         TextButton(
             onPressed: () => Navigator.pop(context, true),
             child: Text(
-              'Delete',
+              firstOption,
               style: TextStyle(color: errorColor),
             )),
         TextButton(
           onPressed: () => Navigator.pop(context, false),
           child: Text(
-            'Cancel',
+            secondOption,
             style: TextStyle(color: whiteColor),
           ),
         )

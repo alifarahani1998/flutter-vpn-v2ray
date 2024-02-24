@@ -40,10 +40,14 @@ class _TopDownSnappingSheetState extends State<TopDownSnappingSheet> {
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<AuthorizationController, AuthorizationStates>(
-      listener: (context, state) {
+      listener: (context, state) async {
         if (state is AuthorizationStatesAuthorized) {
           qrVisibility = false;
           if (qrCodeScanned) {
+            context
+              .read<ConnectionController>()
+              .requestVPNPermission(widget.flutterV2ray);
+            await Future.delayed(Duration(seconds: 2));
             context
                 .read<ConnectionController>()
                 .connect(Global.connectionJsonModel, widget.flutterV2ray);

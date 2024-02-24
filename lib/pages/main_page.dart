@@ -37,7 +37,6 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
   late bool isAboveSheetOpen;
   late bool isBelowSheetOpen;
   late bool connectedFromGlobe;
-  final Uri url = Uri.parse('https://moodiboom.com');
   late Timer _aboveTimer;
   late Timer _belowTimer;
 
@@ -119,7 +118,13 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
                   ? 'Delete'
                   : 'Register',
               onPressed: () => state is AuthorizationStatesAuthorized
-                  ? showDialog(context: context, builder: warningDialog)
+                  ? showDialog(
+                          context: context,
+                          builder: (context) => warningDialog(
+                              context,
+                              'Are you sure\nyou want to delete your token?',
+                              'Delete',
+                              'Cancel'))
                       .then((value) => value ? resetConfig() : null)
                   : _tokenController.text.canConfirmToken()
                       ? context
@@ -137,9 +142,7 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
           ),
           Expanded(
             child: MainButton(
-              onPressed: () async => state is AuthorizationStatesInitial
-                  ? await launchUrl(url)
-                  : null,
+              onPressed: () async => await launchUrl(Uri.parse(telegramURL)),
               text: state is AuthorizationStatesAuthorized
                   ? 'Renewal'
                   : 'Buy a token',
@@ -155,10 +158,14 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<AuthorizationController, AuthorizationStates>(
-      listener: (context, state) {
+      listener: (context, state) async {
         if (state is AuthorizationStatesAuthorized) {
           _tokenController.text = Global.shPreferences.getString(TOKEN)!;
+          context
+              .read<ConnectionController>()
+              .requestVPNPermission(flutterV2ray);
           if (connectedFromGlobe) {
+            await Future.delayed(Duration(seconds: 2));
             context
                 .read<ConnectionController>()
                 .connect(Global.connectionJsonModel, flutterV2ray);
@@ -339,7 +346,11 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
                         ],
                       )),
                   Container(
-                    height: MediaQuery.of(context).size.height / 3,
+                    height: MediaQuery.of(context).size.height < 685.0
+                        ? MediaQuery.of(context).size.height / 2.8
+                        : MediaQuery.of(context).size.height < 785.0
+                            ? MediaQuery.of(context).size.height / 3
+                            : MediaQuery.of(context).size.height / 3.1,
                     child: SnappingSheet(
                       lockOverflowDrag: true,
                       controller: _snappingSheetControllerAbove,

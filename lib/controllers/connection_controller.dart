@@ -29,10 +29,12 @@ class ConnectionController extends Cubit<ConnectingStates> {
       emit(ConnectionStateConnected());
   }
 
+  Future<bool> requestVPNPermission(FlutterV2ray flutterV2ray) async => await flutterV2ray.requestPermission();
+
   Future<void> connect(dynamic connectionJson, FlutterV2ray flutterV2ray) async {
     emit(ConnectionStateLoading());
-    await Future.delayed(Duration(seconds: 1));
-    if (await flutterV2ray.requestPermission()) {
+    await Future.delayed(Duration(seconds: 2));
+    if (await requestVPNPermission(flutterV2ray)) {
       await flutterV2ray.startV2Ray(
         remark: "Default Remark",
         config: json.encode(connectionJson),

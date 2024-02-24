@@ -5,6 +5,9 @@ const String internetText = 'Your internet is ';
 const String securingConnectionText = 'Securing your ';
 const String TOKEN = 'TOKEN';
 const String IS_CONNECTED = 'IS_CONNECTED';
+const String moodiboomURL = 'https://moodiboom.com';
+const String telegramURL = 'https://t.me/ScapePremiumBot';
+const String appVersionURL = 'https://moodiboom.com/version.txt';
 
 // icons & images
 const String qrSvg = 'assets/icons/qr.svg';
