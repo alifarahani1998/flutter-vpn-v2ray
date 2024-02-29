@@ -47,7 +47,7 @@ class _TopDownSnappingSheetState extends State<TopDownSnappingSheet> {
             context
               .read<ConnectionController>()
               .requestVPNPermission(widget.flutterV2ray);
-            await Future.delayed(Duration(seconds: 2));
+            await Future.delayed(const Duration(seconds: 2));
             context
                 .read<ConnectionController>()
                 .connect(Global.connectionJsonModel, widget.flutterV2ray);
@@ -109,7 +109,7 @@ class _TopDownSnappingSheetState extends State<TopDownSnappingSheet> {
                                   SnappingPosition.factor(
                                     snappingCurve: Curves.elasticOut,
                                     snappingDuration:
-                                        Duration(milliseconds: 200),
+                                        const Duration(milliseconds: 200),
                                     positionFactor: 0.15,
                                   ),
                                 ),

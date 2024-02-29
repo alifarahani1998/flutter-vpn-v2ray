@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -49,16 +50,25 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
     isAboveSheetOpen = false;
     isBelowSheetOpen = false;
     connectedFromGlobe = false;
-    flutterV2ray = FlutterV2ray(
-      onStatusChanged: (status) {
-        v2rayStatus.value = status;
-      },
-    );
+    flutterV2ray = FlutterV2ray(onStatusChanged: (status) => v2rayStatus.value = status);
+    flutterV2ray.initializeV2Ray();
+    isVpnActive();
   }
 
-  @override
-  void dispose() {
-    super.dispose();
+
+  Future<void> isVpnActive() async {
+    bool isVpnActive;
+    List<NetworkInterface> interfaces = await NetworkInterface.list(
+        includeLoopback: false, type: InternetAddressType.any);
+    interfaces.isNotEmpty
+        ? isVpnActive = interfaces.any((interface) =>
+            interface.name.contains("tun") ||
+            interface.name.contains("ppp") ||
+            interface.name.contains("pptp"))
+        : isVpnActive = false;
+
+    if (isVpnActive)
+      context.read<ConnectionController>().emit(ConnectionStateConnected());
   }
 
   void resetConfig() async {
@@ -72,7 +82,7 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
 
   void autoScrollSnappingSheetAbove() async {
     int counter = 5;
-    _aboveTimer = Timer.periodic(Duration(seconds: 1), (timer) {
+    _aboveTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (counter == 0) {
         if (isAboveSheetOpen)
           _snappingSheetControllerAbove.snapToPosition(
@@ -89,13 +99,13 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
 
   void autoScrollSnappingSheetBelow() async {
     int counter = 5;
-    _belowTimer = Timer.periodic(Duration(seconds: 1), (timer) {
+    _belowTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (counter == 0) {
         if (isBelowSheetOpen)
           _snappingSheetControllerBelow.snapToPosition(SnappingPosition.factor(
             positionFactor: 0.05,
             snappingCurve: Curves.easeOutExpo,
-            snappingDuration: Duration(seconds: 1),
+            snappingDuration: const Duration(seconds: 1),
             grabbingContentOffset: GrabbingContentOffset.top,
           ));
         timer.cancel();
@@ -165,7 +175,7 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
               .read<ConnectionController>()
               .requestVPNPermission(flutterV2ray);
           if (connectedFromGlobe) {
-            await Future.delayed(Duration(seconds: 2));
+            await Future.delayed(const Duration(seconds: 2));
             context
                 .read<ConnectionController>()
                 .connect(Global.connectionJsonModel, flutterV2ray);
@@ -239,7 +249,7 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
                                   SnappingPosition.factor(
                                     snappingCurve: Curves.elasticOut,
                                     snappingDuration:
-                                        Duration(milliseconds: 200),
+                                        const Duration(milliseconds: 200),
                                     positionFactor: 0.2,
                                   ),
                                 );
@@ -374,7 +384,7 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
                         ),
                         SnappingPosition.factor(
                           snappingCurve: Curves.elasticOut,
-                          snappingDuration: Duration(milliseconds: 200),
+                          snappingDuration: const Duration(milliseconds: 200),
                           positionFactor: 0.15,
                         ),
                       ],
@@ -398,12 +408,12 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
                           SnappingPosition.factor(
                             positionFactor: 0.05,
                             snappingCurve: Curves.easeOutExpo,
-                            snappingDuration: Duration(seconds: 1),
+                            snappingDuration: const Duration(seconds: 1),
                             grabbingContentOffset: GrabbingContentOffset.top,
                           ),
                           SnappingPosition.factor(
                             snappingCurve: Curves.elasticOut,
-                            snappingDuration: Duration(milliseconds: 200),
+                            snappingDuration: const Duration(milliseconds: 200),
                             positionFactor: 0.2,
                           ),
                         ],

@@ -2,8 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_v2ray/flutter_v2ray.dart';
-import 'package:moodiboom/helpers/global.dart';
-import 'package:moodiboom/utils/constants.dart';
 
 abstract class ConnectingStates {}
 
@@ -19,21 +17,14 @@ class ConnectionStateError extends ConnectingStates {
 }
 
 class ConnectionController extends Cubit<ConnectingStates> {
-  ConnectionController() : super(ConnectionStateInitial()) {
-    checkLastConnectionState();
-  }
+  ConnectionController() : super(ConnectionStateInitial());
 
-  void checkLastConnectionState() {
-    if (Global.shPreferences.containsKey(IS_CONNECTED) &&
-        Global.shPreferences.getBool(IS_CONNECTED)!)
-      emit(ConnectionStateConnected());
-  }
 
   Future<bool> requestVPNPermission(FlutterV2ray flutterV2ray) async => await flutterV2ray.requestPermission();
 
   Future<void> connect(dynamic connectionJson, FlutterV2ray flutterV2ray) async {
     emit(ConnectionStateLoading());
-    await Future.delayed(Duration(seconds: 2));
+    await Future.delayed(const Duration(seconds: 2));
     if (await requestVPNPermission(flutterV2ray)) {
       await flutterV2ray.startV2Ray(
         remark: "Default Remark",
@@ -41,14 +32,12 @@ class ConnectionController extends Cubit<ConnectingStates> {
         proxyOnly: false,
       );
       emit(ConnectionStateConnected());
-      Global.shPreferences.setBool(IS_CONNECTED, true);
     }
   }
 
   Future<void> disconnect(FlutterV2ray flutterV2ray) async {
     await flutterV2ray.stopV2Ray();
     emit(ConnectionStateInitial());
-    Global.shPreferences.setBool(IS_CONNECTED, false);
   }
 
   // void delay(String connectionJson) async {

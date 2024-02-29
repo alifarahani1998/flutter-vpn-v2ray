@@ -9,7 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 class SplashPage extends StatelessWidget {
   const SplashPage({Key? key}) : super(key: key);
 
-  updateApp() async => await launchUrl(Uri.parse(moodiboomURL));
+  updateApp() async => await launchUrl(Uri.parse(appDownloadURL));
 
   @override
   Widget build(BuildContext context) {

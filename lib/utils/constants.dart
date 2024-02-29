@@ -4,8 +4,7 @@ import 'package:flutter/material.dart';
 const String internetText = 'Your internet is ';
 const String securingConnectionText = 'Securing your ';
 const String TOKEN = 'TOKEN';
-const String IS_CONNECTED = 'IS_CONNECTED';
-const String moodiboomURL = 'https://moodiboom.com';
+const String appDownloadURL = 'https://download.moodiboom.com/moodiboom.apk';
 const String telegramURL = 'https://t.me/ScapePremiumBot';
 const String appVersionURL = 'https://moodiboom.com/version.txt';
 

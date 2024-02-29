@@ -10,7 +10,6 @@ abstract class VersionStates {}
 class VersionStateInitial extends VersionStates {}
 
 class VersionStateNewVersionAvailable extends VersionStates {
-  VersionStateNewVersionAvailable();
 }
 
 class VersionStatePassVersionChecking extends VersionStates {}
